@@ -428,6 +428,9 @@ function renderCascadeScreen(tree, node) {
             <button class="btn-primary" data-action="restart">
               Restart this cascade
             </button>
+            <button class="btn-secondary" data-action="go-home">
+              Choose a different path
+            </button>
           </div>
         `
             : ""
