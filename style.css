@@ -388,8 +388,7 @@ body {
   line-height: 1.45;
 }
 
-/* Mobile */
-
+/* Mobile / small tablet */
 @media (max-width: 720px) {
   .app-shell {
     max-width: 100%;
@@ -399,11 +398,39 @@ body {
 
   .app-header {
     flex-direction: column;
-    align-items: flex-start;
+    /* Remove align-items: flex-start; */
     gap: 0.75rem;
   }
 
   .home-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Phone sizes */
+@media (max-width: 600px) {
+
+  /* Center the entire header block */
+  .app-header {
+    align-items: center;   
+    text-align: center;
+  }
+
+  .app-header > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .app-meta {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .app-footer {
+    text-align: center;
+    width: 100%;
   }
 }

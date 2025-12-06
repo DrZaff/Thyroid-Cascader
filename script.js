@@ -18,7 +18,7 @@ const decisionTrees = {
       h1: {
         id: "h1",
         type: "question",
-        text: "Initial labs: what is the TSH?",
+        text: "Obtain TSH.",
         note: "Use an assay not affected by supplements such as high-dose biotin.",
         options: [
           { label: "TSH elevated", next: "h2" },
@@ -29,35 +29,35 @@ const decisionTrees = {
       h2: {
         id: "h2",
         type: "question",
-        text: "In the setting of elevated TSH, what is the free T4?",
+        text: "Repeat TSH (confirm elevation) and get FT4.",
         options: [
-          { label: "Free T4 low", next: "h2_out_primary" },
-          { label: "Free T4 normal", next: "h2_out_subclinical" },
-          { label: "Free T4 high", next: "h2_out_other" }
+          { label: "FT4 low", next: "h2_out_primary" },
+          { label: "FT4 normal", next: "h2_out_subclinical" },
+          { label: "FT4 high", next: "h2_out_other" }
         ]
       },
       h2_out_primary: {
         id: "h2_out_primary",
         type: "outcome",
         text: "Pattern consistent with primary hypothyroidism.",
-        note: "Low fT4 and low-high TSH (5-10 mU/L) can rarely also be central - correlate clinically."
+        note: "Low FT4 and low-high TSH (5-10 mU/L) can rarely also be central - correlate clinically."
       },
       h2_out_subclinical: {
         id: "h2_out_subclinical",
         type: "outcome",
         text: "Pattern consistent with subclinical hypothyroidism.",
-        note: "Repeat TSH and fT4 in 1-3 months to confirm diagnosis."
+        note: "Repeat TSH and FT4 in 1-3 months to confirm diagnosis."
       },
       h2_out_other: {
         id: "h2_out_other",
         type: "outcome",
-        text: "Uncommon pattern: elevated TSH with high free T4.",
+        text: "Uncommon pattern: elevated TSH with high FT4.",
         note: "Consider assay interference, thyroid hormone resistance, amiodarone or a TSH-secreting pituitary adenoma."
       },
       h3: {
         id: "h3",
         type: "question",
-        text: "TSH is within reference range. Are there strong clinical hypothyroid features or pituitary disease?",
+        text: "Are there strong clinical hypothyroid features or pituitary disease?",
         options: [
           { label: "Yes – strong symptoms or pituitary disease", next: "h3_next" },
           { label: "No – limited symptoms", next: "h3_out_unlikely" }
@@ -66,7 +66,7 @@ const decisionTrees = {
       h3_next: {
         id: "h3_next",
         type: "question",
-        text: "Obtain free T4 (and repeat TSH to confirm normal). What is the result?",
+        text: "Obtain FT4 (and repeat TSH to confirm normal).",
         options: [
           { label: "Free T4 LLN/low", next: "h3_out_central" },
           { label: "Free T4 normal", next: "h3_out_unlikely" },
@@ -88,7 +88,7 @@ const decisionTrees = {
       h4: {
         id: "h4",
         type: "question",
-        text: "Repeat TSH (confirm low), fT4, total T3. What are fT4 and total T3?",
+        text: "Repeat TSH (confirm low), FT4, total T3.",
         options: [
           { label: "Normal or eleavated", next: "h4_biotin" },
           { label: "LLN or low", next: "h3_out_central" }
@@ -125,7 +125,7 @@ const decisionTrees = {
       hy1: {
         id: "hy1",
         type: "question",
-        text: "Obtain TSH with FT4 and T3. What is TSH?",
+        text: "Obtain TSH with FT4 and T3.",
         note: "In stable patients using high-dose biotin, testing may need to be repeated off biotin for 2-3 days.",
         options: [
           { label: "TSH low", next: "hy1_low" },
@@ -164,7 +164,7 @@ const decisionTrees = {
       hy1_next: {
         id: "hy1_next",
         type: "question",
-        text: "TSH is normal or elevated. What are free T4 and T3?",
+        text: "What are free T4 and T3?",
         options: [
           { label: "Free T4 and/or T3 high", next: "hy1_out_tshmediated" },
           { label: "Free T4 and T3 not elevated", next: "hy1_out_excluded" }
@@ -192,7 +192,7 @@ const decisionTrees = {
       n1: {
         id: "n1",
         type: "question",
-        text: "Obtain TSH, FT4, T3, and ultrasound. What is the TSH?",
+        text: "Obtain TSH and ultrasound.",
         options: [
           { label: "TSH normal or high", next: "n2" },
           { label: "TSH low", next: "n3" }
@@ -222,7 +222,7 @@ const decisionTrees = {
       n3: {
         id: "n3",
         type: "question",
-        text: "Obtain radionuclide scan. What is nodule function?",
+        text: "Obtain FT4, T3, and radionuclide scan.",
         options: [
           { label: "Nodule functioning ('hot')", next: "n3_Hormones" },
           { label: "Nodule nonfunctioning", next: "n3_out_subclinical" }
