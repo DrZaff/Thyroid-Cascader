@@ -208,6 +208,151 @@ body {
   color: var(--color-text-accent);
 }
 
+/* ------ Labs interpretation panel (home top box) ------ */
+
+.labs-panel {
+  margin-bottom: 1.3rem;
+  padding: 0.9rem 1rem 1.1rem;
+  border-radius: 12px;
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.labs-header {
+  margin-bottom: 0.65rem;
+}
+
+.labs-title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.labs-subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.labs-form {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+  align-items: flex-end;
+}
+
+.labs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.labs-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.labs-select {
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.9rem;
+}
+
+.labs-select:focus {
+  outline: none;
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 1px rgba(22, 242, 154, 0.45);
+}
+
+.labs-submit {
+  margin-top: 0;
+  width: 100%;
+}
+
+.labs-output {
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+}
+
+.labs-result {
+  border-radius: 10px;
+  border: 1px solid var(--color-border-subtle);
+  background: #161b2b;
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+
+.labs-result-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.labs-result-title {
+  margin: 0 0 0.15rem;
+  font-size: 1.05rem;
+  color: var(--color-text-accent);
+}
+
+.labs-result-subtitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.labs-pattern {
+  margin: 0 0 0.55rem;
+  font-size: 0.88rem;
+  color: var(--color-text-primary);
+}
+
+.labs-section-heading {
+  margin: 0 0 0.3rem;
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+}
+
+.labs-etiology-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.86rem;
+}
+
+.labs-etiology-list li {
+  margin-bottom: 0.15rem;
+}
+
+.labs-result-section {
+  margin-top: 0.5rem;
+}
+
+.labs-note {
+  margin: 0.15rem 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.labs-note--warning {
+  color: var(--color-text-danger);
+}
+
+.labs-disclaimer {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.results-placeholder {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
 /* Cascade screen */
 
 .cascade-shell {
@@ -405,6 +550,15 @@ body {
   .home-grid {
     grid-template-columns: 1fr;
   }
+
+  .labs-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .labs-submit {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
 }
 
 /* Phone sizes */
@@ -431,6 +585,14 @@ body {
 
   .app-footer {
     text-align: center;
+    width: 100%;
+  }
+
+  .labs-form {
+    grid-template-columns: 1fr;
+  }
+
+  .labs-submit {
     width: 100%;
   }
 }

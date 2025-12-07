@@ -70,7 +70,7 @@ const decisionTrees = {
         options: [
           { label: "Free T4 LLN/low", next: "h3_out_central" },
           { label: "Free T4 normal", next: "h3_out_unlikely" },
-	  { label: "Free T4 elevated", next: "h2_out_other" }
+          { label: "Free T4 elevated", next: "h2_out_other" }
         ]
       },
       h3_out_central: {
@@ -92,7 +92,7 @@ const decisionTrees = {
         options: [
           { label: "Normal or eleavated", next: "h4_biotin" },
           { label: "LLN or low", next: "h3_out_central" }
-	]
+        ]
       },
       h4_biotin: {
         id: "h4_biotin",
@@ -101,7 +101,7 @@ const decisionTrees = {
         options: [
           { label: "Yes", next: "h4_out_biotinINT" },
           { label: "No", next: "h4_out_hyperthyroid" }
-	]
+        ]
       },
       h4_out_biotinINT: {
         id: "h4_out_biotinINT",
@@ -235,7 +235,7 @@ const decisionTrees = {
         options: [
           { label: "FT4 and/or T3 high", next: "n3_out_hot" },
           { label: "FT4 and T3 normal", next: "n3_out_subclinical" }
-	]
+        ]
       },
       n3_out_hot: {
         id: "n3_out_hot",
@@ -252,6 +252,210 @@ const decisionTrees = {
     }
   }
 };
+
+// ---------- Thyroid Lab Interpretation (Home Screen Box) ----------
+
+// Etiology lists derived from your reference table.
+// These are plain strings so the logic is UI-agnostic.
+
+const THYROID_ETIOLOGIES = {
+  primaryHypo: [
+    "Hashimoto thyroiditis (most common cause).",
+    "Iatrogenic (e.g., following thyroidectomy or radioiodine therapy).",
+    "Antithyroid medication (e.g., amiodarone, lithium).",
+    "Transient hypothyroidism (e.g., silent thyroiditis, subacute granulomatous thyroiditis, postpartum thyroiditis)."
+  ],
+  secondaryHypo: [
+    "Pituitary disorders (e.g., pituitary adenoma).",
+    "Infiltrative diseases of the pituitary.",
+    "Iatrogenic (e.g., following pituitary surgery)."
+  ],
+  tertiaryHypo: [
+    "Hypothalamic disorders."
+  ],
+  subclinicalHypo: [
+    "Same etiologies as primary hypothyroidism."
+  ],
+  euthyroidLowT3: [
+    "Occurs in severe illness or severe physical stress (most common in intensive care patients)."
+  ],
+  euthyroidLowT3T4: [
+    "Occurs in severe illness or severe physical stress (most common in intensive care patients)."
+  ],
+  primaryHyper: [
+    "Graves disease.",
+    "Toxic multinodular goiter (toxic MNG).",
+    "Toxic adenoma (see thyroid nodules and thyroid cancer sections).",
+    "Postpartum thyroiditis.",
+    "Subacute granulomatous thyroiditis (de Quervain thyroiditis)."
+  ],
+  secondaryHyper: [
+    "Thyrotropic (TSH-secreting) pituitary adenoma."
+  ],
+  subclinicalHyper: [
+    "Same etiologies as primary hyperthyroidism."
+  ]
+};
+
+/**
+ * Pure logic: interpret TSH / FT4 / T3 pattern using the reference table.
+ * Inputs: "high" | "normal" | "low"
+ * Returns a structured object for UI to render.
+ */
+function interpretThyroidPattern(tsh, ft4, t3) {
+  // Normal baseline: all normal
+  if (tsh === "normal" && ft4 === "normal" && t3 === "normal") {
+    return {
+      match: false,
+      reason:
+        "TSH, free T4, and T3 are all marked normal – no specific disorder from the reference table is highlighted. Correlate clinically."
+    };
+  }
+
+  // --- Euthyroid sick syndrome patterns ---
+  // Low T3 syndrome: TSH normal, FT4 normal, T3 low
+  if (tsh === "normal" && ft4 === "normal" && t3 === "low") {
+    return {
+      match: true,
+      category: "Euthyroid sick syndrome",
+      diagnosisTitle: "Euthyroid sick: Low T3 syndrome",
+      patternSummary: "TSH normal, free T4 normal, T3 decreased.",
+      etiologies: THYROID_ETIOLOGIES.euthyroidLowT3,
+      notes: [
+        "Pattern classically seen in severe illness or marked physiologic stress.",
+        "This is a non-thyroidal illness pattern rather than primary thyroid disease."
+      ]
+    };
+  }
+
+  // Low T3 + low T4 syndrome: typically TSH normal with low FT4 and low T3
+  if (tsh === "normal" && ft4 === "low" && t3 === "low") {
+    return {
+      match: true,
+      category: "Euthyroid sick syndrome",
+      diagnosisTitle: "Euthyroid sick: Low T3 and T4 syndrome",
+      patternSummary: "TSH normal, free T4 decreased, T3 decreased.",
+      etiologies: THYROID_ETIOLOGIES.euthyroidLowT3T4,
+      notes: [
+        "Usually reflects more severe or prolonged systemic illness.",
+        "Always interpret in the clinical context; do not diagnose primary hypothyroidism solely from this pattern in a critically ill patient."
+      ]
+    };
+  }
+
+  // --- Overt hypothyroidism (primary vs central) ---
+
+  // Primary hypothyroidism: TSH elevated, FT4 low (T3 often low)
+  if (tsh === "high" && ft4 === "low") {
+    return {
+      match: true,
+      category: "Overt hypothyroidism",
+      diagnosisTitle: "Primary hypothyroidism (overt)",
+      patternSummary: "TSH elevated, free T4 decreased (T3 typically decreased).",
+      etiologies: THYROID_ETIOLOGIES.primaryHypo,
+      notes: [
+        "Pattern consistent with primary gland failure (thyroid-level problem)."
+      ]
+    };
+  }
+
+  // Central (secondary/tertiary) hypothyroidism: TSH low with low FT4 and low T3
+  if (tsh === "low" && ft4 === "low" && t3 === "low") {
+    return {
+      match: true,
+      category: "Overt hypothyroidism",
+      diagnosisTitle: "Secondary or tertiary (central) hypothyroidism",
+      patternSummary: "TSH decreased, free T4 decreased, T3 decreased.",
+      etiologies: [
+        "Secondary (pituitary causes):",
+        ...THYROID_ETIOLOGIES.secondaryHypo,
+        "Tertiary (hypothalamic causes):",
+        ...THYROID_ETIOLOGIES.tertiaryHypo
+      ],
+      notes: [
+        "Central hypothyroidism cannot be reliably distinguished as secondary vs tertiary by labs alone.",
+        "Look for pituitary vs hypothalamic disease, other pituitary hormone deficiencies, and imaging findings."
+      ]
+    };
+  }
+
+  // --- Subclinical hypothyroidism ---
+
+  // TSH mildly elevated; FT4 and T3 normal in the reference table
+  if (tsh === "high" && ft4 === "normal" && t3 === "normal") {
+    return {
+      match: true,
+      category: "Subclinical hypothyroidism",
+      diagnosisTitle: "Subclinical hypothyroidism",
+      patternSummary: "TSH mildly elevated, free T4 and T3 normal.",
+      etiologies: THYROID_ETIOLOGIES.subclinicalHypo,
+      notes: [
+        "Diagnosis requires persistent pattern on repeat testing and clinical correlation."
+      ]
+    };
+  }
+
+  // --- Hyperthyroidism patterns ---
+
+  // Primary hyperthyroidism: TSH low with elevated thyroid hormone(s)
+  if (
+    tsh === "low" &&
+    (ft4 === "high" || t3 === "high")
+  ) {
+    return {
+      match: true,
+      category: "Primary hyperthyroidism",
+      diagnosisTitle: "Primary hyperthyroidism (overt)",
+      patternSummary:
+        "TSH decreased with elevated free T4 and/or T3.",
+      etiologies: THYROID_ETIOLOGIES.primaryHyper,
+      notes: [
+        "Pattern typical of Graves disease or toxic nodular thyroid disease.",
+        "Consider clinical features and imaging to refine etiology."
+      ]
+    };
+  }
+
+  // Secondary hyperthyroidism: TSH high with elevated thyroid hormone(s)
+  if (
+    tsh === "high" &&
+    (ft4 === "high" || t3 === "high")
+  ) {
+    return {
+      match: true,
+      category: "Secondary hyperthyroidism",
+      diagnosisTitle: "Secondary hyperthyroidism",
+      patternSummary:
+        "TSH inappropriately elevated with elevated free T4 and/or T3.",
+      etiologies: THYROID_ETIOLOGIES.secondaryHyper,
+      notes: [
+        "Consider TSH-secreting pituitary adenoma or other rare TSH-mediated etiologies.",
+        "Specialist evaluation and pituitary imaging are typically required."
+      ]
+    };
+  }
+
+  // Subclinical hyperthyroidism: TSH low, FT4 and T3 normal
+  if (tsh === "low" && ft4 === "normal" && t3 === "normal") {
+    return {
+      match: true,
+      category: "Subclinical hyperthyroidism",
+      diagnosisTitle: "Subclinical hyperthyroidism",
+      patternSummary: "TSH decreased, free T4 and T3 normal.",
+      etiologies: THYROID_ETIOLOGIES.subclinicalHyper,
+      notes: [
+        "Management depends on degree of TSH suppression, age, and comorbidities."
+      ]
+    };
+  }
+
+  // If we reach here, pattern is not directly in the simplified table mapping
+  return {
+    match: false,
+    reason:
+      "This specific combination is not directly mapped in the reference table patterns used here. Consider reviewing the full cascades and exact numeric values."
+  };
+}
 
 // ---------- App State ----------
 
@@ -287,6 +491,57 @@ function renderCurrentScreen() {
 
 function renderHomeScreen() {
   return `
+    <section class="labs-panel">
+      <div class="labs-header">
+        <h2 class="labs-title">Interpret these labs</h2>
+        <p class="labs-subtitle">
+          Choose whether TSH, free T4, and T3 are elevated, normal, or decreased to match the reference table patterns.
+        </p>
+      </div>
+
+      <form id="lab-interpret-form" class="labs-form">
+        <div class="labs-field">
+          <label for="tshStatus" class="labs-label">TSH</label>
+          <select id="tshStatus" name="tshStatus" class="labs-select" required>
+            <option value="">Select…</option>
+            <option value="high">Elevated</option>
+            <option value="normal">Normal</option>
+            <option value="low">Decreased</option>
+          </select>
+        </div>
+
+        <div class="labs-field">
+          <label for="ft4Status" class="labs-label">Free T4</label>
+          <select id="ft4Status" name="ft4Status" class="labs-select" required>
+            <option value="">Select…</option>
+            <option value="high">Elevated</option>
+            <option value="normal">Normal</option>
+            <option value="low">Decreased</option>
+          </select>
+        </div>
+
+        <div class="labs-field">
+          <label for="t3Status" class="labs-label">T3</label>
+          <select id="t3Status" name="t3Status" class="labs-select" required>
+            <option value="">Select…</option>
+            <option value="high">Elevated</option>
+            <option value="normal">Normal</option>
+            <option value="low">Decreased</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary labs-submit">
+          Interpret
+        </button>
+      </form>
+
+      <div id="lab-interpret-output" class="labs-output">
+        <p class="results-placeholder">
+          Select a pattern and click “Interpret” to see the corresponding disorder and etiologies from the table.
+        </p>
+      </div>
+    </section>
+
     <div class="home-intro">
       <p>
         Select the presentation that best matches your clinical question.
@@ -340,6 +595,94 @@ function attachHomeEvents() {
       startCascade(treeKey);
     });
   });
+
+  // Wire up the lab interpretation form
+  const labForm = document.getElementById("lab-interpret-form");
+  if (labForm) {
+    labForm.addEventListener("submit", handleLabInterpretSubmit);
+  }
+}
+
+// Handle lab interpretation submission (home screen)
+function handleLabInterpretSubmit(event) {
+  event.preventDefault();
+
+  const tsh = document.getElementById("tshStatus")?.value || "";
+  const ft4 = document.getElementById("ft4Status")?.value || "";
+  const t3 = document.getElementById("t3Status")?.value || "";
+  const outputEl = document.getElementById("lab-interpret-output");
+
+  if (!outputEl) return;
+
+  if (!tsh || !ft4 || !t3) {
+    outputEl.innerHTML = `
+      <p class="labs-note labs-note--warning">
+        Please select a status (elevated, normal, or decreased) for TSH, free T4, and T3.
+      </p>
+    `;
+    return;
+  }
+
+  const interpretation = interpretThyroidPattern(tsh, ft4, t3);
+  renderLabInterpretation(outputEl, interpretation);
+}
+
+// Render the interpretation box content
+function renderLabInterpretation(container, interpretation) {
+  if (!interpretation.match) {
+    container.innerHTML = `
+      <div class="labs-result">
+        <p class="labs-note labs-note--warning">
+          ${interpretation.reason}
+        </p>
+        <p class="labs-note">
+          This tool uses a simplified mapping from the thyroid function test table and is for decision-support only.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const etiologiesHtml = interpretation.etiologies?.length
+    ? `
+      <div class="labs-result-section">
+        <p class="labs-section-heading">Etiologies (from reference table)</p>
+        <ul class="labs-etiology-list">
+          ${interpretation.etiologies
+            .map((e) => `<li>${e}</li>`)
+            .join("")}
+        </ul>
+      </div>
+    `
+    : "";
+
+  const notesHtml = interpretation.notes?.length
+    ? `
+      <div class="labs-result-section">
+        ${interpretation.notes
+          .map((n) => `<p class="labs-note">${n}</p>`)
+          .join("")}
+      </div>
+    `
+    : "";
+
+  container.innerHTML = `
+    <div class="labs-result">
+      <p class="labs-result-label">Pattern interpretation</p>
+      <h3 class="labs-result-title">${interpretation.diagnosisTitle}</h3>
+      ${
+        interpretation.category
+          ? `<p class="labs-result-subtitle">${interpretation.category}</p>`
+          : ""
+      }
+      <p class="labs-pattern">${interpretation.patternSummary}</p>
+      ${etiologiesHtml}
+      ${notesHtml}
+      <p class="labs-disclaimer">
+        This tool is for educational and decision-support purposes only and does not replace clinical judgment, institutional guidelines, or specialist consultation.
+      </p>
+    </div>
+  `;
 }
 
 // Cascade screen (single node)
