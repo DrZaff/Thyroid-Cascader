@@ -1,4 +1,202 @@
-/* ------ Labs interpretation panel (home top box) ------ */
+/* =========================
+   ClinicalToolsDEV – Global
+   ========================= */
+
+:root {
+  --color-bg-main: #050810;
+  --color-bg-elevated: #0b0f1a;
+  --color-bg-muted: #101522;
+
+  --color-text-primary: #f5f5f7;
+  --color-text-secondary: #a3a8b8;
+  --color-text-muted: #6d7385;
+  --color-text-danger: #ff6b6b;
+  --color-text-accent: #7cffb2;
+
+  --color-accent-primary: #16f29a;
+  --color-accent-soft: #1e9c74;
+
+  --color-border-subtle: #1b2235;
+  --color-border-strong: #2f3b5c;
+
+  --shadow-card: 0 18px 45px rgba(0, 0, 0, 0.55);
+  --radius-card: 12px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: radial-gradient(circle at top, #0b0f1a 0, #050810 55%);
+  color: var(--color-text-primary);
+}
+
+/* =========================
+   App Shell / Header
+   ========================= */
+
+.app-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.app-subtitle {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.app-meta {
+  display: flex;
+  align-items: center;
+}
+
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 242, 154, 0.5);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-accent);
+}
+
+/* Main container */
+
+.app-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-main--single {
+  display: block;
+}
+
+/* Card shell */
+
+.card {
+  background: linear-gradient(
+      135deg,
+      rgba(22, 242, 154, 0.06),
+      transparent 60%
+    ),
+    var(--color-bg-elevated);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+
+.card-screen {
+  min-height: 60vh;
+}
+
+/* =========================
+   Buttons
+   ========================= */
+
+.btn-primary {
+  border-radius: 999px;
+  border: none;
+  background-image: linear-gradient(135deg, #16f29a, #4da3ff);
+  color: #050810;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.03);
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.7);
+}
+
+.btn-secondary {
+  border-radius: 999px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.btn-secondary:hover {
+  background: #151a28;
+  transform: translateY(-1px);
+}
+
+.btn-fullwidth {
+  width: 100%;
+  text-align: center;
+}
+
+/* =========================
+   Screen container
+   ========================= */
+
+.screen-container {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   Home – Option labels
+   ========================= */
+
+.option-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+}
+
+.option-label--red {
+  color: var(--color-text-danger);
+}
+
+/* =========================
+   Labs Interpretation Panel
+   (Option 1)
+   ========================= */
 
 .labs-panel {
   margin-bottom: 1.3rem;
@@ -69,6 +267,11 @@
   font-size: 0.9rem;
 }
 
+.results-placeholder {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
 .labs-result {
   border-radius: 10px;
   border: 1px solid var(--color-border-subtle);
@@ -116,26 +319,220 @@
   color: var(--color-text-danger);
 }
 
-.results-placeholder {
-  margin: 0;
+/* =========================
+   Home – Option 2 + cards
+   ========================= */
+
+.home-intro {
+  margin-bottom: 1.25rem;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.home-card {
+  border-radius: 14px;
+  border: 1px solid var(--color-border-subtle);
+  background: radial-gradient(circle at top left,
+      rgba(22, 242, 154, 0.08),
+      transparent 55%)
+    var(--color-bg-muted);
+  padding: 0.9rem 0.9rem 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.home-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+  border-color: var(--color-accent-primary);
+}
+
+.home-card-title {
+  font-size: 1rem;
+  margin: 0 0 0.4rem;
+}
+
+.home-card-body {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.home-tag {
+  margin-top: 0.6rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-accent);
+}
+
+/* =========================
+   Cascade Screen
+   ========================= */
+
+.cascade-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cascade-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.cascade-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon-back {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: var(--color-bg-muted);
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.icon-back span {
+  font-size: 1rem;
+}
+
+.icon-back:hover {
+  background: #151a28;
+  transform: translateY(-1px);
+}
+
+.cascade-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.cascade-step {
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
-/* Option labels */
-
-.option-label {
-  font-weight: 700;
-  font-size: 0.85rem;
-  margin-bottom: 0.15rem;
+.cascade-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
-.option-label--red {
+.cascade-question {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem;
+}
+
+.cascade-note {
+  font-size: 0.85rem;
   color: var(--color-text-danger);
 }
 
-/* Responsive tweaks for labs panel */
+.cascade-options {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Decision buttons */
+
+.cascade-option-btn {
+  border-radius: 999px;
+  border: none;
+  background-image: linear-gradient(135deg, #16f29a, #4da3ff);
+  color: #050810;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.cascade-option-btn:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.03);
+}
+
+.cascade-option-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+}
+
+/* Outcome text */
+
+.outcome-note {
+  font-size: 0.95rem;
+  color: rgba(255, 107, 107, 0.75);
+  margin: 0.4rem 0 1.4rem 0;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.cascade-actions {
+  margin-top: 1.4rem;
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+/* =========================
+   Footer
+   ========================= */
+
+.app-footer {
+  margin-top: 1.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.disclaimer {
+  margin: 0;
+}
+
+/* =========================
+   Responsive
+   ========================= */
 
 @media (max-width: 720px) {
+  .app-shell {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 1.8rem 0.75rem 2.2rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+
   .labs-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -147,6 +544,29 @@
 }
 
 @media (max-width: 600px) {
+  .app-header {
+    align-items: center;
+    text-align: center;
+  }
+
+  .app-header > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .app-meta {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .app-footer {
+    text-align: center;
+    width: 100%;
+  }
+
   .labs-form {
     grid-template-columns: 1fr;
   }
@@ -155,3 +575,28 @@
     width: 100%;
   }
 }
+
+.home-intro {
+  margin-bottom: 1.25rem;
+}
+
+.home-intro-header {
+  /* mirrors labs-header spacing */
+  margin-bottom: 0.4rem;
+}
+
+.home-intro--top {
+  margin-bottom: 0.5rem;   /* header just above the card */
+}
+
+.home-intro--bottom {
+  margin-top: 1.3rem;      /* space between card and Option 2 header */
+}
+
+.etiology-heading {
+  margin: 0.6rem 0 0.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+

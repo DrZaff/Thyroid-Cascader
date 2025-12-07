@@ -40,13 +40,13 @@ const decisionTrees = {
         id: "h2_out_primary",
         type: "outcome",
         text: "Pattern consistent with primary hypothyroidism.",
-        note: "Low FT4 and low-high TSH (5-10 mU/L) can rarely also be central - correlate clinically."
+        note: "Low FT4 and low-high TSH (5–10 mU/L) can rarely also be central – correlate clinically."
       },
       h2_out_subclinical: {
         id: "h2_out_subclinical",
         type: "outcome",
         text: "Pattern consistent with subclinical hypothyroidism.",
-        note: "Repeat TSH and FT4 in 1-3 months to confirm diagnosis."
+        note: "Repeat TSH and FT4 in 1–3 months to confirm diagnosis."
       },
       h2_out_other: {
         id: "h2_out_other",
@@ -118,6 +118,7 @@ const decisionTrees = {
     }
   },
 
+  // ---------- Expanded hyperthyroid cascade ----------
   hyper: {
     title: "Hyperthyroid cascade",
     rootId: "hy1",
@@ -125,62 +126,170 @@ const decisionTrees = {
       hy1: {
         id: "hy1",
         type: "question",
-        text: "Obtain TSH with FT4 and T3.",
+        text: "Obtain TSH with free T4 and T3 (thyroid function tests).",
         note: "In stable patients using high-dose biotin, testing may need to be repeated off biotin for 2–3 days.",
         options: [
           { label: "TSH low", next: "hy1_low" },
           { label: "TSH normal or high", next: "hy1_next" }
         ]
       },
+
+      // TSH low branch → overt vs subclinical vs other
       hy1_low: {
         id: "hy1_low",
         type: "question",
-        text: "What are FT4 and T3?",
-        note: "In stable patients using high-dose biotin, testing may need to be repeated off biotin for 2–3 days.",
+        text: "How are free T4 and T3?",
+        note: "Low TSH with elevated thyroid hormone levels suggests overt hyperthyroidism.",
         options: [
-          { label: "FT4 and/or T3 high", next: "hy1_out_overt" },
-          { label: "FT4 and T3 normal", next: "hy1_out_subclinical" },
-          { label: "FT4 and/or T3 low", next: "hy1_out_other" }
+          { label: "Free T4 and/or T3 high", next: "hy_overt_gravesCheck" },
+          { label: "Free T4 and T3 normal", next: "hy_subclinical_intro" },
+          { label: "Free T4 and/or T3 low", next: "hy1_out_other" }
         ]
       },
-      hy1_out_overt: {
-        id: "hy1_out_overt",
-        type: "outcome",
-        text: "Pattern consistent with overt hyperthyroidism.",
-        note: "Next steps typically involve determining etiology and urgency of treatment."
+
+      // --- Overt hyperthyroidism pathway ---
+
+      hy_overt_gravesCheck: {
+        id: "hy_overt_gravesCheck",
+        type: "question",
+        text: "Characteristic features of Graves disease present?",
+        note: "Look for Graves ophthalmopathy (exophthalmos), pretibial myxedema, or thyroid acropachy (clubbing).",
+        options: [
+          { label: "Yes – strong suspicion for Graves disease", next: "hy_overt_checkAntiTRAb" },
+          { label: "No / uncertain", next: "hy_overt_raiScan" }
+        ]
       },
-      hy1_out_subclinical: {
-        id: "hy1_out_subclinical",
-        type: "outcome",
-        text: "Pattern consistent with subclinical hyperthyroidism.",
-        note: "Management depends on age, TSH suppression degree, and comorbidities."
+
+      hy_overt_checkAntiTRAb: {
+        id: "hy_overt_checkAntiTRAb",
+        type: "question",
+        text: "Check anti-TRAb (TSH receptor antibodies).",
+        options: [
+          { label: "Positive", next: "hy_out_graves" },
+          { label: "Negative", next: "hy_overt_raiScan" }
+        ]
       },
+
+      hy_overt_raiScan: {
+        id: "hy_overt_raiScan",
+        type: "question",
+        text: "Radioactive iodine uptake scan.",
+        note: "If contraindications (e.g., pregnancy, breastfeeding) or not available, consider ultrasound with Doppler flow.",
+        options: [
+          { label: "High uptake", next: "hy_overt_raiPattern" },
+          { label: "Low uptake", next: "hy_overt_lowUptakeAutoAb" }
+        ]
+      },
+
+      hy_overt_raiPattern: {
+        id: "hy_overt_raiPattern",
+        type: "question",
+        text: "What is the pattern of radioactive iodine uptake?",
+        options: [
+          { label: "Diffuse pattern", next: "hy_out_graves" },
+          { label: "Nodular pattern", next: "hy_out_toxicNodular" }
+        ]
+      },
+
+      hy_overt_lowUptakeAutoAb: {
+        id: "hy_overt_lowUptakeAutoAb",
+        type: "question",
+        text: "Low uptake with overt hyperthyroidism: check anti-TPOAb and/or anti-TGAb.",
+        options: [
+          { label: "Positive", next: "hy_out_earlyHashimoto" },
+          { label: "Negative", next: "hy_overt_thyroglobulin" }
+        ]
+      },
+
+      hy_overt_thyroglobulin: {
+        id: "hy_overt_thyroglobulin",
+        type: "question",
+        text: "Measure thyroglobulin.",
+        options: [
+          { label: "High", next: "hy_out_endogenousHyper" },
+          { label: "Low", next: "hy_out_exogenousThyroid" }
+        ]
+      },
+
+      // Outcomes for overt hyperthyroidism etiologies
+
+      hy_out_graves: {
+        id: "hy_out_graves",
+        type: "outcome",
+        text: "Graves disease.",
+        note: "Diffuse uptake on scan and/or positive TSH receptor antibodies with compatible clinical features."
+      },
+
+      hy_out_toxicNodular: {
+        id: "hy_out_toxicNodular",
+        type: "outcome",
+        text: "Toxic nodular disease (toxic adenoma or toxic multinodular goiter).",
+        note: "High uptake with nodular pattern; correlate with ultrasound findings."
+      },
+
+      hy_out_earlyHashimoto: {
+        id: "hy_out_earlyHashimoto",
+        type: "outcome",
+        text: "Early Hashimoto thyroiditis (hashitoxicosis).",
+        note: "Low uptake with positive thyroid autoantibodies in the setting of overt hyperthyroidism."
+      },
+
+      hy_out_endogenousHyper: {
+        id: "hy_out_endogenousHyper",
+        type: "outcome",
+        text: "Endogenous hyperthyroidism (e.g., thyroiditis).",
+        note: "Low uptake, negative autoantibodies, and high thyroglobulin suggest thyroid hormone release from the gland."
+      },
+
+      hy_out_exogenousThyroid: {
+        id: "hy_out_exogenousThyroid",
+        type: "outcome",
+        text: "Exogenous thyroid hormone use.",
+        note: "Low uptake with low thyroglobulin levels suggests exogenous thyroid hormone excess."
+      },
+
+      // --- Subclinical hyperthyroidism path ---
+
+      hy_subclinical_intro: {
+        id: "hy_subclinical_intro",
+        type: "outcome",
+        text: "Subclinical hyperthyroidism.",
+        note: "TSH low with normal free T4 and T3. Management depends on age, comorbidities, and degree of TSH suppression."
+      },
+
+      // --- Other low-TSH patterns ---
+
       hy1_out_other: {
         id: "hy1_out_other",
         type: "outcome",
-        text: "Broad differential.",
+        text: "Low TSH with low thyroid hormone levels – broad differential.",
         note: "Consider non-thyroidal illness, high-dose glucocorticoids, recovery phase after thyrotoxicosis, or central hypothyroidism."
       },
+
+      // --- TSH normal or high branch (includes thyrotropic adenoma) ---
+
       hy1_next: {
         id: "hy1_next",
         type: "question",
-        text: "What are free T4 and T3?",
+        text: "TSH normal or high: what are free T4 and T3?",
         options: [
           { label: "Free T4 and/or T3 high", next: "hy1_out_tshmediated" },
           { label: "Free T4 and T3 not elevated", next: "hy1_out_excluded" }
         ]
       },
+
       hy1_out_tshmediated: {
         id: "hy1_out_tshmediated",
         type: "outcome",
-        text: "Consider TSH-mediated hyperthyroidism (rare).",
-        note: "Specialist evaluation and pituitary imaging may be indicated per local protocols."
+        text: "TSH-mediated hyperthyroidism (e.g., thyrotropic adenoma).",
+        note: "Inappropriately normal or elevated TSH with high thyroid hormones; MRI pituitary gland and specialist evaluation are typically indicated."
       },
+
       hy1_out_excluded: {
         id: "hy1_out_excluded",
         type: "outcome",
-        text: "Biochemical pattern does not support hyperthyroidism.",
-        note: "Hyperthyroidism is unlikely based on these labs."
+        text: "Hyperthyroidism unlikely on current TFTs.",
+        note: "TSH normal or high with non-elevated thyroid hormone levels. Consider alternative diagnoses or repeat testing if clinical suspicion remains high."
       }
     }
   },
@@ -268,12 +377,8 @@ const THYROID_ETIOLOGIES = {
     "Infiltrative diseases of the pituitary.",
     "Iatrogenic (e.g., following pituitary surgery)."
   ],
-  tertiaryHypo: [
-    "Hypothalamic disorders."
-  ],
-  subclinicalHypo: [
-    "Same etiologies as primary hypothyroidism."
-  ],
+  tertiaryHypo: ["Hypothalamic disorders."],
+  subclinicalHypo: ["Same etiologies as primary hypothyroidism."],
   euthyroidLowT3: [
     "Occurs in severe illness or severe physical stress (most common in intensive care patients)."
   ],
@@ -287,12 +392,8 @@ const THYROID_ETIOLOGIES = {
     "Postpartum thyroiditis.",
     "Subacute granulomatous thyroiditis (de Quervain thyroiditis)."
   ],
-  secondaryHyper: [
-    "Thyrotropic (TSH-secreting) pituitary adenoma."
-  ],
-  subclinicalHyper: [
-    "Same etiologies as primary hyperthyroidism."
-  ]
+  secondaryHyper: ["Thyrotropic (TSH-secreting) pituitary adenoma."],
+  subclinicalHyper: ["Same etiologies as primary hyperthyroidism."]
 };
 
 /**
@@ -302,11 +403,15 @@ const THYROID_ETIOLOGIES = {
  */
 function interpretThyroidPattern(tsh, ft4, t3) {
   // All normal → no specific disorder
-  if (tsh === "normal" && ft4 === "normal" && (t3 === "normal" || t3 === "unknown")) {
+  if (
+    tsh === "normal" &&
+    ft4 === "normal" &&
+    (t3 === "normal" || t3 === "unknown")
+  ) {
     return {
       match: false,
       reason:
-        "TSH, free T4, and T3 (if measured) are all marked normal – no specific disorder from this table is highlighted."
+        "TSH, free T4, and T3 (if measured) are all marked normal – no specific disorder identified."
     };
   }
 
@@ -344,16 +449,28 @@ function interpretThyroidPattern(tsh, ft4, t3) {
       match: true,
       diagnosisTitle: "Secondary or tertiary (central) hypothyroidism",
       etiologies: [
-        "Secondary (pituitary causes):",
-        ...THYROID_ETIOLOGIES.secondaryHypo,
-        "Tertiary (hypothalamic causes):",
-        ...THYROID_ETIOLOGIES.tertiaryHypo
+        {
+          heading: "Secondary (pituitary causes)",
+          items: [
+            "Pituitary disorders (e.g., pituitary adenoma).",
+            "Infiltrative diseases of the pituitary.",
+            "Iatrogenic (e.g., following pituitary surgery)."
+          ]
+        },
+        {
+          heading: "Tertiary (hypothalamic causes)",
+          items: ["Hypothalamic disorders."]
+        }
       ]
     };
   }
 
   // Subclinical hypothyroidism: TSH high, FT4 and T3 normal
-  if (tsh === "high" && ft4 === "normal" && (t3 === "normal" || t3 === "unknown")) {
+  if (
+    tsh === "high" &&
+    ft4 === "normal" &&
+    (t3 === "normal" || t3 === "unknown")
+  ) {
     return {
       match: true,
       diagnosisTitle: "Subclinical hypothyroidism",
@@ -366,7 +483,8 @@ function interpretThyroidPattern(tsh, ft4, t3) {
     return {
       match: true,
       diagnosisTitle: "Primary hyperthyroidism (overt)",
-      etiologies: THYROID_ETIOLOGIES.primaryHyper
+      etiologies: THYROID_ETIOLOGIES.primaryHyper,
+      offerHyperCascade: true
     };
   }
 
@@ -384,14 +502,15 @@ function interpretThyroidPattern(tsh, ft4, t3) {
     return {
       match: true,
       diagnosisTitle: "Subclinical hyperthyroidism",
-      etiologies: THYROID_ETIOLOGIES.subclinicalHyper
+      etiologies: THYROID_ETIOLOGIES.subclinicalHyper,
+      offerHyperCascade: true
     };
   }
 
   return {
     match: false,
     reason:
-      "This specific combination is not directly mapped in the simplified table. Consider reviewing the full cascades and exact numeric values."
+      "This specific combination is non-specific. Consider reviewing the full cascades and exact numeric values."
   };
 }
 
@@ -408,23 +527,61 @@ function renderLabInterpretation(container, interpretation) {
     return;
   }
 
-  const etiologiesHtml =
-    interpretation.etiologies && interpretation.etiologies.length
-      ? `
-      <p class="labs-section-heading">Etiologies</p>
+  let etiologiesHtml = "";
+
+  // If etiologies is grouped by headings
+  if (
+    Array.isArray(interpretation.etiologies) &&
+    interpretation.etiologies.length &&
+    typeof interpretation.etiologies[0] === "object"
+  ) {
+    etiologiesHtml = interpretation.etiologies
+      .map(
+        (group) => `
+      <p class="etiology-heading">${group.heading}</p>
       <ul class="labs-etiology-list">
-        ${interpretation.etiologies.map((e) => `<li>${e}</li>`).join("")}
+        ${group.items.map((i) => `<li>${i}</li>`).join("")}
       </ul>
     `
-      : "";
+      )
+      .join("");
+  } else {
+    // Simple flat list (for other diagnoses)
+    etiologiesHtml = `
+      <ul class="labs-etiology-list">
+        ${interpretation.etiologies.map((i) => `<li>${i}</li>`).join("")}
+      </ul>
+    `;
+  }
+
+  // If Option 1 result is primary or subclinical hyperthyroidism,
+  // show a button to jump straight into the hyperthyroid cascade.
+  const hyperCtaHtml = interpretation.offerHyperCascade
+    ? `
+      <div class="labs-result-section">
+        <button type="button" class="btn-secondary" data-action="start-hypercascade">
+          Go to hyperthyroid pathway
+        </button>
+      </div>
+    `
+    : "";
 
   container.innerHTML = `
     <div class="labs-result">
       <p class="labs-result-label">Pattern interpretation</p>
       <h3 class="labs-result-title">${interpretation.diagnosisTitle}</h3>
+      <p class="labs-section-heading">Etiologies</p>
       ${etiologiesHtml}
+      ${hyperCtaHtml}
     </div>
   `;
+
+  const hyperBtn = container.querySelector('[data-action="start-hypercascade"]');
+  if (hyperBtn) {
+    hyperBtn.addEventListener("click", () => {
+      startCascade("hyper");
+    });
+  }
 }
 
 // Handle lab interpretation submission (home screen)
@@ -487,15 +644,19 @@ function renderCurrentScreen() {
 
 function renderHomeScreen() {
   return `
-    <section class="labs-panel">
-      <div class="labs-header">
+    <!-- Option 1 header OUTSIDE the card -->
+    <section class="home-intro home-intro--top">
+      <div class="home-intro-header">
         <div class="option-label option-label--red">Option 1</div>
-        <h2 class="labs-title">Interpret these labs</h2>
+        <h2 class="labs-title">Enter labs</h2>
         <p class="labs-subtitle">
           Choose whether TSH, free T4, and T3 are elevated, normal, or decreased to match the reference table patterns.
         </p>
       </div>
+    </section>
 
+    <!-- Card now just holds inputs + result -->
+    <section class="labs-panel">
       <form id="lab-interpret-form" class="labs-form">
         <div class="labs-field">
           <label for="tshStatus" class="labs-label">TSH</label>
@@ -533,21 +694,19 @@ function renderHomeScreen() {
         </button>
       </form>
 
-      <div id="lab-interpret-output" class="labs-output">
-        <p class="results-placeholder">
-          Select a pattern and click “Interpret” to see the corresponding disorder and etiologies.
+      <div id="lab-interpret-output" class="labs-output"></div>
+    </section>
+
+    <!-- Option 2 header, same format / level -->
+    <section class="home-intro home-intro--bottom">
+      <div class="home-intro-header">
+        <div class="option-label option-label--red">Option 2</div>
+        <h2 class="labs-title">Select the presentation</h2>
+        <p class="labs-subtitle">
+          Each path will walk through a stepwise thyroid decision tree.
         </p>
       </div>
     </section>
-
-    <div class="home-intro">
-      <div class="option-label option-label--red">Option 2</div>
-      <p>
-        Select the presentation that best matches your clinical question.
-        Each path will walk through a stepwise thyroid decision tree. This tool
-        does not generate management recommendations.
-      </p>
-    </div>
 
     <div class="home-grid">
       <article class="home-card" data-tree="hypo">
@@ -638,11 +797,7 @@ function renderCascadeScreen(tree, node) {
   const outcomeHtml = isOutcome
     ? `
       <div>
-        ${
-          node.note
-            ? `<p class="outcome-note">${node.note}</p>`
-            : ""
-        }
+        ${node.note ? `<p class="outcome-note">${node.note}</p>` : ""}
       </div>
     `
     : "";
