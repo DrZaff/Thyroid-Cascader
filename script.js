@@ -1,883 +1,489 @@
-// Thyroid Cascader – script.js
-// All clinical content here is placeholder; replace with your own decision trees.
+// script.js – VA Night Shift Algorithm (ClinicalToolsDEV, compact mobile layout)
+
+// ----- Team labels based on date rotation -----
+
+console.log("script.js loaded");
+
+const ROLE_LABELS = {
+  L: "Long call",
+  M: "Medium call",
+  Post: "Post call",
+  Pre: "Pre call",
+  S: "Short call",
+};
+
+const SHORT_ROLE_LABELS = {
+  L: "Long",
+  M: "Medium",
+  Post: "Post",
+  Pre: "Pre",
+  S: "Short",
+};
 
 document.addEventListener("DOMContentLoaded", () => {
-  initThyroidCascader();
+  const form = document.getElementById("tool-form");
+  const resultsContainer = document.getElementById("results-container");
+  const flagsContainer = document.getElementById("flags-container");
+
+  // Set labels with date-based team rotation on load
+  const teamMapping = calculateDefaultTeamRotation();
+  console.log("Team mapping:", teamMapping);
+  applyTeamLabels(teamMapping);
+
+  if (!form) return;
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const inputs = readInputs();
+    const validationErrors = validateInputs(inputs);
+
+    if (validationErrors.length > 0) {
+      renderValidationErrors(resultsContainer, validationErrors);
+      flagsContainer.innerHTML = "";
+      return;
+    }
+
+    const calcResults = performCalculations(inputs, teamMapping);
+    const flags = deriveFlags(calcResults);
+
+    renderResults(resultsContainer, calcResults);
+    renderFlags(flagsContainer, flags);
+  });
 });
 
-// ---------- Decision Tree Definitions ----------
+function applyTeamLabels(teamMapping) {
+  ["L", "M", "Post", "Pre", "S"].forEach((role) => {
+    const el = document.getElementById(`label-${role}`);
+    if (!el) return;
+    const teamNum = teamMapping[role];
+    const text = teamNum
+      ? `${ROLE_LABELS[role]} (Team ${teamNum})`
+      : `${ROLE_LABELS[role]} (Team ?)`;
+    el.textContent = text;
+  });
+}
 
-// NOTE: Replace these placeholder trees with your full hypo / hyper / nodule
-// algorithms. Each node represents one full-screen decision or outcome.
+// ----- Input handling -----
 
-const decisionTrees = {
-  hypo: {
-    title: "Hypothyroid cascade",
-    rootId: "h1",
-    nodes: {
-      h1: {
-        id: "h1",
-        type: "question",
-        text: "Obtain TSH.",
-        note: "Use an assay not affected by supplements such as high-dose biotin.",
-        options: [
-          { label: "TSH elevated", next: "h2" },
-          { label: "TSH normal", next: "h3" },
-          { label: "TSH low", next: "h4" }
-        ]
-      },
-      h2: {
-        id: "h2",
-        type: "question",
-        text: "Repeat TSH (confirm elevation) and get FT4.",
-        options: [
-          { label: "FT4 low", next: "h2_out_primary" },
-          { label: "FT4 normal", next: "h2_out_subclinical" },
-          { label: "FT4 high", next: "h2_out_other" }
-        ]
-      },
-      h2_out_primary: {
-        id: "h2_out_primary",
-        type: "outcome",
-        text: "Pattern consistent with primary hypothyroidism.",
-        note: "Low FT4 and low-high TSH (5-10 mU/L) can rarely also be central - correlate clinically."
-      },
-      h2_out_subclinical: {
-        id: "h2_out_subclinical",
-        type: "outcome",
-        text: "Pattern consistent with subclinical hypothyroidism.",
-        note: "Repeat TSH and FT4 in 1-3 months to confirm diagnosis."
-      },
-      h2_out_other: {
-        id: "h2_out_other",
-        type: "outcome",
-        text: "Uncommon pattern: elevated TSH with high FT4.",
-        note: "Consider assay interference, thyroid hormone resistance, amiodarone or a TSH-secreting pituitary adenoma."
-      },
-      h3: {
-        id: "h3",
-        type: "question",
-        text: "Are there strong clinical hypothyroid features or pituitary disease?",
-        options: [
-          { label: "Yes – strong symptoms or pituitary disease", next: "h3_next" },
-          { label: "No – limited symptoms", next: "h3_out_unlikely" }
-        ]
-      },
-      h3_next: {
-        id: "h3_next",
-        type: "question",
-        text: "Obtain FT4 (and repeat TSH to confirm normal).",
-        options: [
-          { label: "Free T4 LLN/low", next: "h3_out_central" },
-          { label: "Free T4 normal", next: "h3_out_unlikely" },
-          { label: "Free T4 elevated", next: "h2_out_other" }
-        ]
-      },
-      h3_out_central: {
-        id: "h3_out_central",
-        type: "outcome",
-        text: "Pattern suggests possible central hypothyroidism.",
-        note: "Also rule out nonthyroid illness."
-      },
-      h3_out_unlikely: {
-        id: "h3_out_unlikely",
-        type: "outcome",
-        text: "Biochemical pattern does not support hypothyroidism.",
-        note: "Consider alternative explanations for symptoms."
-      },
-      h4: {
-        id: "h4",
-        type: "question",
-        text: "Repeat TSH (confirm low), FT4, total T3.",
-        options: [
-          { label: "Normal or eleavated", next: "h4_biotin" },
-          { label: "LLN or low", next: "h3_out_central" }
-        ]
-      },
-      h4_biotin: {
-        id: "h4_biotin",
-        type: "question",
-        text: "Is the patient takingg biotin in doses of 5-10 mg daily or higher?",
-        options: [
-          { label: "Yes", next: "h4_out_biotinINT" },
-          { label: "No", next: "h4_out_hyperthyroid" }
-        ]
-      },
-      h4_out_biotinINT: {
-        id: "h4_out_biotinINT",
-        type: "outcome",
-        text: "Possible biotin assay interference.",
-        note: "Repeat labs after discontinuing biotin for 2-3 days."
-      },
-      h4_out_hyperthyroid: {
-        id: "h4_out_hyperthyroid",
-        type: "outcome",
-        text: "Hyperthyroid (overt or subclinical) likely.",
-        note: "Go to hyperthyroid pathway."
-      }
-    }
-  },
+function readInputs() {
+  const getNumber = (id) => {
+    const val = document.getElementById(id)?.value;
+    if (val === "" || val === null || val === undefined) return null;
+    const num = Number(val);
+    return Number.isNaN(num) ? null : num;
+  };
 
-  hyper: {
-    title: "Hyperthyroid cascade",
-    rootId: "hy1",
-    nodes: {
-      hy1: {
-        id: "hy1",
-        type: "question",
-        text: "Obtain TSH with FT4 and T3.",
-        note: "In stable patients using high-dose biotin, testing may need to be repeated off biotin for 2-3 days.",
-        options: [
-          { label: "TSH low", next: "hy1_low" },
-          { label: "TSH normal or high", next: "hy1_next" }
-        ]
-      },
-      hy1_low: {
-        id: "hy1_low",
-        type: "question",
-        text: "What are FT4 and T3?",
-        note: "In stable patients using high-dose biotin, testing may need to be repeated off biotin for 2-3 days.",
-        options: [
-          { label: "FT4 and/or T3 high", next: "hy1_out_overt" },
-          { label: "FT4 and T3 normal", next: "hy1_out_subclinical" },
-          { label: "FT4 and/or T3 low", next: "hy1_out_other" }
-        ]
-      },
-      hy1_out_overt: {
-        id: "hy1_out_overt",
-        type: "outcome",
-        text: "Pattern consistent with overt hyperthyroidism.",
-        note: "Next steps typically involve determining etiology and urgency of treatment."
-      },
-      hy1_out_subclinical: {
-        id: "hy1_out_subclinical",
-        type: "outcome",
-        text: "Pattern consistent with subclinical hyperthyroidism.",
-        note: "Management depends on age, TSH suppression degree, and comorbidities."
-      },
-      hy1_out_other: {
-        id: "hy1_out_other",
-        type: "outcome",
-        text: "Broad differential.",
-        note: "Consider non-thyroidal illness, high-dose glucocorticoids, recovery phase after thyrotoxicosis, or central hypothyroidism."
-      },
-      hy1_next: {
-        id: "hy1_next",
-        type: "question",
-        text: "What are free T4 and T3?",
-        options: [
-          { label: "Free T4 and/or T3 high", next: "hy1_out_tshmediated" },
-          { label: "Free T4 and T3 not elevated", next: "hy1_out_excluded" }
-        ]
-      },
-      hy1_out_tshmediated: {
-        id: "hy1_out_tshmediated",
-        type: "outcome",
-        text: "Consider TSH-mediated hyperthyroidism (rare).",
-        note: "Specialist evaluation and pituitary imaging may be indicated per local protocols."
-      },
-      hy1_out_excluded: {
-        id: "hy1_out_excluded",
-        type: "outcome",
-        text: "Biochemical pattern does not support hyperthyroidism.",
-        note: "Hyperthyroidism is unlikely based on these labs."
-      }
-    }
-  },
+  const L_start = getNumber("L_start");
+  const M_start = getNumber("M_start");
+  const Post_start = getNumber("Post_start");
+  const Pre_start = getNumber("Pre_start");
+  const S_start = getNumber("S_start");
+  const numAdmissions = getNumber("numAdmissions");
 
-  nodule: {
-    title: "Thyroid nodule cascade",
-    rootId: "n1",
-    nodes: {
-      n1: {
-        id: "n1",
-        type: "question",
-        text: "Obtain TSH and ultrasound.",
-        options: [
-          { label: "TSH normal or high", next: "n2" },
-          { label: "TSH low", next: "n3" }
-        ]
-      },
-      n2: {
-        id: "n2",
-        type: "question",
-        text: "Do sonographic features meet your institution’s criteria for FNA?",
-        options: [
-          { label: "Meets FNA criteria", next: "n2_out_fna" },
-          { label: "Does not meet FNA criteria", next: "n2_out_monitor" }
-        ]
-      },
-      n2_out_fna: {
-        id: "n2_out_fna",
-        type: "outcome",
-        text: "Nodule suitable for fine-needle aspiration under ultrasound guidance.",
-        note: "Follow local cytology and follow-up recommendations."
-      },
-      n2_out_monitor: {
-        id: "n2_out_monitor",
-        type: "outcome",
-        text: "Nodule does not currently meet sonographic criteria for biopsy.",
-        note: "Consider periodic sonographic surveillance per guidelines (6-24 month re-eval)."
-      },
-      n3: {
-        id: "n3",
-        type: "question",
-        text: "Obtain FT4, T3, and radionuclide scan.",
-        options: [
-          { label: "Nodule functioning ('hot')", next: "n3_Hormones" },
-          { label: "Nodule nonfunctioning", next: "n3_out_subclinical" }
-        ]
-      },
-      n3_Hormones: {
-        id: "n3_Hormones",
-        type: "question",
-        text: "What are FT4 and T3 levels?",
-        options: [
-          { label: "FT4 and/or T3 high", next: "n3_out_hot" },
-          { label: "FT4 and T3 normal", next: "n3_out_subclinical" }
-        ]
-      },
-      n3_out_hot: {
-        id: "n3_out_hot",
-        type: "outcome",
-        text: "Overt hyperthyroidism.",
-        note: "Initiate treatment."
-      },
-      n3_out_subclinical: {
-        id: "n3_out_subclinical",
-        type: "outcome",
-        text: "Subclinical hyperthyroid",
-        note: "Requires individualized assessment, often combining ultrasound risk features and biochemical findings."
-      }
-    }
-  }
-};
-
-// ---------- Thyroid Lab Interpretation (Home Screen Box) ----------
-
-// Etiology lists derived from your reference table.
-// These are plain strings so the logic is UI-agnostic.
-
-const THYROID_ETIOLOGIES = {
-  primaryHypo: [
-    "Hashimoto thyroiditis (most common cause).",
-    "Iatrogenic (e.g., following thyroidectomy or radioiodine therapy).",
-    "Antithyroid medication (e.g., amiodarone, lithium).",
-    "Transient hypothyroidism (e.g., silent thyroiditis, subacute granulomatous thyroiditis, postpartum thyroiditis)."
-  ],
-  secondaryHypo: [
-    "Pituitary disorders (e.g., pituitary adenoma).",
-    "Infiltrative diseases of the pituitary.",
-    "Iatrogenic (e.g., following pituitary surgery)."
-  ],
-  tertiaryHypo: [
-    "Hypothalamic disorders."
-  ],
-  subclinicalHypo: [
-    "Same etiologies as primary hypothyroidism."
-  ],
-  euthyroidLowT3: [
-    "Occurs in severe illness or severe physical stress (most common in intensive care patients)."
-  ],
-  euthyroidLowT3T4: [
-    "Occurs in severe illness or severe physical stress (most common in intensive care patients)."
-  ],
-  primaryHyper: [
-    "Graves disease.",
-    "Toxic multinodular goiter (toxic MNG).",
-    "Toxic adenoma (see thyroid nodules and thyroid cancer sections).",
-    "Postpartum thyroiditis.",
-    "Subacute granulomatous thyroiditis (de Quervain thyroiditis)."
-  ],
-  secondaryHyper: [
-    "Thyrotropic (TSH-secreting) pituitary adenoma."
-  ],
-  subclinicalHyper: [
-    "Same etiologies as primary hyperthyroidism."
-  ]
-};
-
-/**
- * Pure logic: interpret TSH / FT4 / T3 pattern using the reference table.
- * Inputs: "high" | "normal" | "low"
- * Returns a structured object for UI to render.
- */
-function interpretThyroidPattern(tsh, ft4, t3) {
-  // Normal baseline: all normal
-  if (tsh === "normal" && ft4 === "normal" && t3 === "normal") {
-    return {
-      match: false,
-      reason:
-        "TSH, free T4, and T3 are all marked normal – no specific disorder from the reference table is highlighted. Correlate clinically."
-    };
-  }
-
-  // --- Euthyroid sick syndrome patterns ---
-  // Low T3 syndrome: TSH normal, FT4 normal, T3 low
-  if (tsh === "normal" && ft4 === "normal" && t3 === "low") {
-    return {
-      match: true,
-      category: "Euthyroid sick syndrome",
-      diagnosisTitle: "Euthyroid sick: Low T3 syndrome",
-      patternSummary: "TSH normal, free T4 normal, T3 decreased.",
-      etiologies: THYROID_ETIOLOGIES.euthyroidLowT3,
-      notes: [
-        "Pattern classically seen in severe illness or marked physiologic stress.",
-        "This is a non-thyroidal illness pattern rather than primary thyroid disease."
-      ]
-    };
-  }
-
-  // Low T3 + low T4 syndrome: typically TSH normal with low FT4 and low T3
-  if (tsh === "normal" && ft4 === "low" && t3 === "low") {
-    return {
-      match: true,
-      category: "Euthyroid sick syndrome",
-      diagnosisTitle: "Euthyroid sick: Low T3 and T4 syndrome",
-      patternSummary: "TSH normal, free T4 decreased, T3 decreased.",
-      etiologies: THYROID_ETIOLOGIES.euthyroidLowT3T4,
-      notes: [
-        "Usually reflects more severe or prolonged systemic illness.",
-        "Always interpret in the clinical context; do not diagnose primary hypothyroidism solely from this pattern in a critically ill patient."
-      ]
-    };
-  }
-
-  // --- Overt hypothyroidism (primary vs central) ---
-
-  // Primary hypothyroidism: TSH elevated, FT4 low (T3 often low)
-  if (tsh === "high" && ft4 === "low") {
-    return {
-      match: true,
-      category: "Overt hypothyroidism",
-      diagnosisTitle: "Primary hypothyroidism (overt)",
-      patternSummary: "TSH elevated, free T4 decreased (T3 typically decreased).",
-      etiologies: THYROID_ETIOLOGIES.primaryHypo,
-      notes: [
-        "Pattern consistent with primary gland failure (thyroid-level problem)."
-      ]
-    };
-  }
-
-  // Central (secondary/tertiary) hypothyroidism: TSH low with low FT4 and low T3
-  if (tsh === "low" && ft4 === "low" && t3 === "low") {
-    return {
-      match: true,
-      category: "Overt hypothyroidism",
-      diagnosisTitle: "Secondary or tertiary (central) hypothyroidism",
-      patternSummary: "TSH decreased, free T4 decreased, T3 decreased.",
-      etiologies: [
-        "Secondary (pituitary causes):",
-        ...THYROID_ETIOLOGIES.secondaryHypo,
-        "Tertiary (hypothalamic causes):",
-        ...THYROID_ETIOLOGIES.tertiaryHypo
-      ],
-      notes: [
-        "Central hypothyroidism cannot be reliably distinguished as secondary vs tertiary by labs alone.",
-        "Look for pituitary vs hypothalamic disease, other pituitary hormone deficiencies, and imaging findings."
-      ]
-    };
-  }
-
-  // --- Subclinical hypothyroidism ---
-
-  // TSH mildly elevated; FT4 and T3 normal in the reference table
-  if (tsh === "high" && ft4 === "normal" && t3 === "normal") {
-    return {
-      match: true,
-      category: "Subclinical hypothyroidism",
-      diagnosisTitle: "Subclinical hypothyroidism",
-      patternSummary: "TSH mildly elevated, free T4 and T3 normal.",
-      etiologies: THYROID_ETIOLOGIES.subclinicalHypo,
-      notes: [
-        "Diagnosis requires persistent pattern on repeat testing and clinical correlation."
-      ]
-    };
-  }
-
-  // --- Hyperthyroidism patterns ---
-
-  // Primary hyperthyroidism: TSH low with elevated thyroid hormone(s)
-  if (
-    tsh === "low" &&
-    (ft4 === "high" || t3 === "high")
-  ) {
-    return {
-      match: true,
-      category: "Primary hyperthyroidism",
-      diagnosisTitle: "Primary hyperthyroidism (overt)",
-      patternSummary:
-        "TSH decreased with elevated free T4 and/or T3.",
-      etiologies: THYROID_ETIOLOGIES.primaryHyper,
-      notes: [
-        "Pattern typical of Graves disease or toxic nodular thyroid disease.",
-        "Consider clinical features and imaging to refine etiology."
-      ]
-    };
-  }
-
-  // Secondary hyperthyroidism: TSH high with elevated thyroid hormone(s)
-  if (
-    tsh === "high" &&
-    (ft4 === "high" || t3 === "high")
-  ) {
-    return {
-      match: true,
-      category: "Secondary hyperthyroidism",
-      diagnosisTitle: "Secondary hyperthyroidism",
-      patternSummary:
-        "TSH inappropriately elevated with elevated free T4 and/or T3.",
-      etiologies: THYROID_ETIOLOGIES.secondaryHyper,
-      notes: [
-        "Consider TSH-secreting pituitary adenoma or other rare TSH-mediated etiologies.",
-        "Specialist evaluation and pituitary imaging are typically required."
-      ]
-    };
-  }
-
-  // Subclinical hyperthyroidism: TSH low, FT4 and T3 normal
-  if (tsh === "low" && ft4 === "normal" && t3 === "normal") {
-    return {
-      match: true,
-      category: "Subclinical hyperthyroidism",
-      diagnosisTitle: "Subclinical hyperthyroidism",
-      patternSummary: "TSH decreased, free T4 and T3 normal.",
-      etiologies: THYROID_ETIOLOGIES.subclinicalHyper,
-      notes: [
-        "Management depends on degree of TSH suppression, age, and comorbidities."
-      ]
-    };
-  }
-
-  // If we reach here, pattern is not directly in the simplified table mapping
   return {
-    match: false,
-    reason:
-      "This specific combination is not directly mapped in the reference table patterns used here. Consider reviewing the full cascades and exact numeric values."
+    startingCensus: {
+      L: L_start,
+      M: M_start,
+      Post: Post_start,
+      Pre: Pre_start,
+      S: S_start,
+    },
+    numAdmissions,
   };
 }
 
-// ---------- App State ----------
+function validateInputs(inputs) {
+  const errors = [];
+  const roles = ["L", "M", "Post", "Pre", "S"];
 
-let appState = {
-  view: "home", // "home" | "cascade"
-  activeTreeKey: null,
-  currentNodeId: null,
-  history: [] // stack of previous nodeIds
-};
+  roles.forEach((role) => {
+    const value = inputs.startingCensus[role];
+    if (value === null) {
+      errors.push(`${ROLE_LABELS[role]} starting census is required.`);
+    } else if (!Number.isFinite(value) || value < 0) {
+      errors.push(`${ROLE_LABELS[role]} starting census must be a non-negative number.`);
+    }
+  });
 
-function initThyroidCascader() {
-  renderCurrentScreen();
+  if (inputs.numAdmissions === null) {
+    errors.push("Number of overnight admissions is required.");
+  } else if (!Number.isInteger(inputs.numAdmissions) || inputs.numAdmissions <= 0) {
+    errors.push("Number of overnight admissions must be a positive whole number.");
+  } else if (inputs.numAdmissions > 40) {
+    errors.push("For safety, limit the simulation to 40 admissions or fewer.");
+  }
+
+  return errors;
 }
 
-// ---------- Rendering ----------
+// ----- Core calculations -----
 
-function renderCurrentScreen() {
-  const container = document.getElementById("screen-container");
-  if (!container) return;
+function performCalculations(inputs, teamMapping) {
+  const startingCensus = {
+    L: inputs.startingCensus.L,
+    M: inputs.startingCensus.M,
+    Post: inputs.startingCensus.Post,
+    Pre: inputs.startingCensus.Pre,
+    S: inputs.startingCensus.S,
+  };
 
-  if (appState.view === "home") {
-    container.innerHTML = renderHomeScreen();
-    attachHomeEvents();
-  } else if (appState.view === "cascade") {
-    const tree = decisionTrees[appState.activeTreeKey];
-    const node = tree?.nodes?.[appState.currentNodeId];
-    container.innerHTML = renderCascadeScreen(tree, node);
-    attachCascadeEvents(tree, node);
+  const simulation = simulateAdmissions(startingCensus, inputs.numAdmissions, teamMapping);
+
+  return {
+    startingCensus,
+    numAdmissions: inputs.numAdmissions,
+    teamMapping,
+    steps: simulation.steps,
+    finalCensus: simulation.finalCensus,
+  };
+}
+
+// Date-based rotation (Excel logic)
+
+function calculateDefaultTeamRotation() {
+  // Excel baseDate = 2025-11-13; JS months are 0-based
+  const baseDate = new Date(2025, 10, 13);
+  const today = truncateToDay(new Date());
+  const baseTeamsPreOrder = [4, 5, 1, 2, 3]; // {4;5;1;2;3} in Excel
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.floor((today.getTime() - baseDate.getTime()) / msPerDay);
+  const offset = ((diffDays % 5) + 5) % 5; // safe mod
+
+  const todayTeamsPreOrder = [];
+  for (let i = 0; i < 5; i++) {
+    todayTeamsPreOrder.push(baseTeamsPreOrder[(i + offset) % 5]);
+  }
+
+  // Indices (1-based in Excel) mapped as:
+  // Pre = 1, M = 2, S = 3, Post = 4, L = 5
+  return {
+    Pre: todayTeamsPreOrder[0],
+    M: todayTeamsPreOrder[1],
+    S: todayTeamsPreOrder[2],
+    Post: todayTeamsPreOrder[3],
+    L: todayTeamsPreOrder[4],
+  };
+}
+
+function truncateToDay(date) {
+  const d = new Date(date.getTime());
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Simulate admission sequence
+function simulateAdmissions(startingCensus, numAdmissions, teamMapping) {
+  const steps = [];
+  let currentCensus = { ...startingCensus };
+
+  for (let i = 0; i < numAdmissions; i++) {
+    const phase = computePhase(currentCensus);
+    const resultRole = determineResultRole(currentCensus, phase);
+    const callChief = checkMaxFlag(resultRole, currentCensus);
+
+    const censusBefore = { ...currentCensus };
+    let censusAfter = { ...currentCensus };
+    let display;
+    const teamNumber = teamMapping[resultRole];
+
+    if (callChief || !teamNumber) {
+      // CALL CHIEF or missing mapping → do not bump census
+      display = "CALL CHIEF";
+    } else {
+      censusAfter[resultRole] = censusAfter[resultRole] + 1;
+         display = `${SHORT_ROLE_LABELS[resultRole]} (Team ${teamNumber})`;
+    }
+
+    steps.push({
+      admissionIndex: i,
+      phase,
+      resultRole,
+      display,
+      callChief,
+      censusBefore,
+      censusAfter,
+    });
+
+    currentCensus = censusAfter;
+  }
+
+  return {
+    steps,
+    finalCensus: currentCensus,
+  };
+}
+
+// Phase logic (mirrors Excel LET formula)
+function computePhase(census) {
+  const values = [census.L, census.M, census.Post, census.Pre, census.S];
+  const minCensus = Math.min(...values);
+
+  if (minCensus < 6) return "AllTo6";
+  if (census.L < 10) return "Lto10";
+  if (census.M < 8) return "Mto8";
+  if (minCensus < 8) return "AllTo8";
+  if (census.L < 12) return "Lto12";
+  if (census.M < 10) return "Mto10";
+  if (minCensus < 10) return "AllTo10";
+  if (census.L < 14) return "Lto14";
+  if (census.M < 12) return "Mto12";
+  if (minCensus < 12) return "AllTo12";
+  if (census.M < 14 || census.Pre < 14) return "MPreTo14";
+  if (census.Post < 14 || census.S < 14) return "PostSTo14";
+  if (census.L < 16) return "Lto16";
+  return "Fallback";
+}
+
+// For AllToX phases: choose lowest census under cap
+function pickAllTeamsChoice(census, phase) {
+  const roles = ["L", "M", "Post", "Pre", "S"];
+  let cap;
+
+  if (phase === "AllTo6") cap = 6;
+  else if (phase === "AllTo8") cap = 8;
+  else if (phase === "AllTo10") cap = 10;
+  else if (phase === "AllTo12") cap = 12;
+  else cap = 999;
+
+  const adjusted = roles.map((role) => {
+    const value = census[role];
+    return value < cap ? value : 999;
+  });
+
+  const minVal = Math.min(...adjusted);
+  const idx = adjusted.indexOf(minVal);
+  return roles[idx] || "L"; // fallback
+}
+
+// Map phase + census to result role
+function determineResultRole(census, phase) {
+  switch (phase) {
+    case "Lto10":
+    case "Lto12":
+    case "Lto14":
+    case "Lto16":
+      return "L";
+    case "Mto8":
+    case "Mto10":
+    case "Mto12":
+      return "M";
+    case "MPreTo14":
+      return census.M <= census.Pre ? "M" : "Pre";
+    case "PostSTo14":
+      return census.Post <= census.S ? "Post" : "S";
+    default:
+      return pickAllTeamsChoice(census, phase);
   }
 }
 
-// Home screen (symptom selection)
+// Hard caps for CALL CHIEF
+function checkMaxFlag(resultRole, census) {
+  const thresholds = {
+    L: 16,
+    M: 14,
+    Post: 14,
+    Pre: 14,
+    S: 14,
+  };
+  const threshold = thresholds[resultRole];
+  if (threshold === undefined) return false;
+  return census[resultRole] >= threshold;
+}
 
-function renderHomeScreen() {
-  return `
-    <section class="labs-panel">
-      <div class="labs-header">
-        <h2 class="labs-title">Interpret these labs</h2>
-        <p class="labs-subtitle">
-          Choose whether TSH, free T4, and T3 are elevated, normal, or decreased to match the reference table patterns.
-        </p>
-      </div>
+// ----- Flags -----
 
-      <form id="lab-interpret-form" class="labs-form">
-        <div class="labs-field">
-          <label for="tshStatus" class="labs-label">TSH</label>
-          <select id="tshStatus" name="tshStatus" class="labs-select" required>
-            <option value="">Select…</option>
-            <option value="high">Elevated</option>
-            <option value="normal">Normal</option>
-            <option value="low">Decreased</option>
-          </select>
-        </div>
+function deriveFlags(calcResults) {
+  const flags = [];
+  const { steps, finalCensus } = calcResults;
 
-        <div class="labs-field">
-          <label for="ft4Status" class="labs-label">Free T4</label>
-          <select id="ft4Status" name="ft4Status" class="labs-select" required>
-            <option value="">Select…</option>
-            <option value="high">Elevated</option>
-            <option value="normal">Normal</option>
-            <option value="low">Decreased</option>
-          </select>
-        </div>
+  // --- CALL CHIEF FLAGS (collapsed to a single pill) ---
 
-        <div class="labs-field">
-          <label for="t3Status" class="labs-label">T3</label>
-          <select id="t3Status" name="t3Status" class="labs-select" required>
-            <option value="">Select…</option>
-            <option value="high">Elevated</option>
-            <option value="normal">Normal</option>
-            <option value="low">Decreased</option>
-          </select>
-        </div>
+  // Collect all admissions where CALL CHIEF was triggered
+  const callChiefAdmissions = steps
+    .filter((step) => step.callChief)
+    .map((step) => step.admissionIndex + 1);
 
-        <button type="submit" class="btn-primary labs-submit">
-          Interpret
-        </button>
-      </form>
+  if (callChiefAdmissions.length === 1) {
+    // Single event
+    flags.push({
+      level: "danger",
+      message: `CALL CHIEF at admission #${callChiefAdmissions[0]} (see matrix for details).`,
+    });
+  } else if (callChiefAdmissions.length > 1) {
+    // Multiple events → single summary pill
+    const listText =
+      callChiefAdmissions.length <= 6
+        ? callChiefAdmissions.join(", ")
+        : `${callChiefAdmissions.slice(0, 6).join(", ")}, …`;
 
-      <div id="lab-interpret-output" class="labs-output">
-        <p class="results-placeholder">
-          Select a pattern and click “Interpret” to see the corresponding disorder and etiologies from the table.
-        </p>
-      </div>
-    </section>
+    flags.push({
+      level: "danger",
+      message: `CALL CHIEF triggered on multiple admissions (#${listText}). See matrix for details.`,
+    });
+  }
 
-    <div class="home-intro">
-      <p>
-        Select the presentation that best matches your clinical question.
-        Each path will walk through a stepwise thyroid decision tree. This tool
-        does not generate management recommendations.
-      </p>
-    </div>
+  // --- CAP / NEAR-CAP FLAGS (one per team, as before) ---
 
-    <div class="home-grid">
-      <article class="home-card" data-tree="hypo">
-        <div>
-          <h2 class="home-card-title">Hypothyroid symptoms</h2>
-          <p class="home-card-body">
-            Fatigue, weight gain, cold intolerance, constipation, dry skin, or
-            bradycardia.
-          </p>
-        </div>
-        <div class="home-tag">Start hypothyroid cascade →</div>
-      </article>
+  const nearCaps = [
+    { role: "L", value: finalCensus.L, soft: 14, hard: 16 },
+    { role: "M", value: finalCensus.M, soft: 12, hard: 14 },
+    { role: "Post", value: finalCensus.Post, soft: 12, hard: 14 },
+    { role: "Pre", value: finalCensus.Pre, soft: 12, hard: 14 },
+    { role: "S", value: finalCensus.S, soft: 12, hard: 14 },
+  ];
 
-      <article class="home-card" data-tree="hyper">
-        <div>
-          <h2 class="home-card-title">Hyperthyroid symptoms</h2>
-          <p class="home-card-body">
-            Palpitations, tremor, heat intolerance, weight loss, anxiety, or
-            thyroid eye findings.
-          </p>
-        </div>
-        <div class="home-tag">Start hyperthyroid cascade →</div>
-      </article>
+  nearCaps.forEach(({ role, value, soft, hard }) => {
+    if (value >= hard) {
+      flags.push({
+        level: "danger",
+        message: `${ROLE_LABELS[role]} at or above hard cap (${value} ≥ ${hard}).`,
+      });
+    } else if (value >= soft) {
+      flags.push({
+        level: "warning",
+        message: `${ROLE_LABELS[role]} approaching cap (${value} ≥ ${soft}).`,
+      });
+    }
+  });
 
-      <article class="home-card" data-tree="nodule">
-        <div>
-          <h2 class="home-card-title">Thyroid nodule</h2>
-          <p class="home-card-body">
-            Solitary or multinodular thyroid enlargement found clinically or on
-            imaging.
-          </p>
-        </div>
-        <div class="home-tag">Start nodule cascade →</div>
-      </article>
+  return flags;
+}
+
+// ----- Rendering -----
+
+function renderValidationErrors(container, errors) {
+  container.innerHTML = `
+    <div class="results-errors">
+      <h3>Check your inputs</h3>
+      <ul>
+        ${errors.map((err) => `<li>${err}</li>`).join("")}
+      </ul>
     </div>
   `;
 }
 
-function attachHomeEvents() {
-  const cards = document.querySelectorAll(".home-card[data-tree]");
-  cards.forEach((card) => {
-    card.addEventListener("click", () => {
-      const treeKey = card.getAttribute("data-tree");
-      startCascade(treeKey);
-    });
+function renderResults(container, results) {
+  const { teamMapping, steps, startingCensus, finalCensus, numAdmissions } = results;
+
+  const date = new Date();
+  const dateLabel = date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 
-  // Wire up the lab interpretation form
-  const labForm = document.getElementById("lab-interpret-form");
-  if (labForm) {
-    labForm.addEventListener("submit", handleLabInterpretSubmit);
-  }
-}
+  const mappingItems = ["L", "M", "Post", "Pre", "S"]
+    .map((role) => {
+      const t = teamMapping[role];
+      const label = ROLE_LABELS[role];
+      if (!t) return `<li>${label}: <span>Team ?</span></li>`;
+      return `<li>${label}: <span>Team ${t}</span></li>`;
+    })
+    .join("");
 
-// Handle lab interpretation submission (home screen)
-function handleLabInterpretSubmit(event) {
-  event.preventDefault();
+  const admissionsRows = steps
+  .map((step) => {
+    const n = step.admissionIndex + 1;
+    const selectedRole = step.callChief ? null : step.resultRole;
+    const phase = step.phase;
+    const c = step.censusAfter; // after admission
 
-  const tsh = document.getElementById("tshStatus")?.value || "";
-  const ft4 = document.getElementById("ft4Status")?.value || "";
-  const t3 = document.getElementById("t3Status")?.value || "";
-  const outputEl = document.getElementById("lab-interpret-output");
+    const cellClass = (role) => {
+      if (!selectedRole || selectedRole !== role) return "";
+      return `cell-selected cell-selected--${role}`;
+    };
 
-  if (!outputEl) return;
+    const resultText = step.callChief ? "CALL CHIEF" : step.display;
+    const resultClass = step.callChief ? "cell-call-chief" : "";
 
-  if (!tsh || !ft4 || !t3) {
-    outputEl.innerHTML = `
-      <p class="labs-note labs-note--warning">
-        Please select a status (elevated, normal, or decreased) for TSH, free T4, and T3.
-      </p>
+    const roleColorClass = step.callChief || !selectedRole
+      ? ""
+      : `result-role result-role--${selectedRole}`;
+
+    return `
+      <tr>
+        <td>${n}</td>
+        <td class="${resultClass} ${roleColorClass}">${resultText}</td>
+        <td class="${cellClass("L")}">${c.L}</td>
+        <td class="${cellClass("M")}">${c.M}</td>
+        <td class="${cellClass("Post")}">${c.Post}</td>
+        <td class="${cellClass("Pre")}">${c.Pre}</td>
+        <td class="${cellClass("S")}">${c.S}</td>
+      </tr>
     `;
-    return;
-  }
-
-  const interpretation = interpretThyroidPattern(tsh, ft4, t3);
-  renderLabInterpretation(outputEl, interpretation);
-}
-
-// Render the interpretation box content
-function renderLabInterpretation(container, interpretation) {
-  if (!interpretation.match) {
-    container.innerHTML = `
-      <div class="labs-result">
-        <p class="labs-note labs-note--warning">
-          ${interpretation.reason}
-        </p>
-        <p class="labs-note">
-          This tool uses a simplified mapping from the thyroid function test table and is for decision-support only.
-        </p>
-      </div>
-    `;
-    return;
-  }
-
-  const etiologiesHtml = interpretation.etiologies?.length
-    ? `
-      <div class="labs-result-section">
-        <p class="labs-section-heading">Etiologies (from reference table)</p>
-        <ul class="labs-etiology-list">
-          ${interpretation.etiologies
-            .map((e) => `<li>${e}</li>`)
-            .join("")}
-        </ul>
-      </div>
-    `
-    : "";
-
-  const notesHtml = interpretation.notes?.length
-    ? `
-      <div class="labs-result-section">
-        ${interpretation.notes
-          .map((n) => `<p class="labs-note">${n}</p>`)
-          .join("")}
-      </div>
-    `
-    : "";
+  })
+  .join("");
 
   container.innerHTML = `
-    <div class="labs-result">
-      <p class="labs-result-label">Pattern interpretation</p>
-      <h3 class="labs-result-title">${interpretation.diagnosisTitle}</h3>
-      ${
-        interpretation.category
-          ? `<p class="labs-result-subtitle">${interpretation.category}</p>`
-          : ""
-      }
-      <p class="labs-pattern">${interpretation.patternSummary}</p>
-      ${etiologiesHtml}
-      ${notesHtml}
-      <p class="labs-disclaimer">
-        This tool is for educational and decision-support purposes only and does not replace clinical judgment, institutional guidelines, or specialist consultation.
+    <div class="results-section">
+      <div class="results-summary">
+        <strong>Date:</strong> ${dateLabel} &nbsp;•&nbsp;
+        <strong>Admissions simulated:</strong> ${numAdmissions}
+      </div>
+
+      <h3>Today's call teams</h3>
+      <ul class="mapping-list">
+        ${mappingItems}
+      </ul>
+
+      <h3>Starting census</h3>
+      <p>
+        Long call: ${startingCensus.L},
+        Medium call: ${startingCensus.M},
+        Post call: ${startingCensus.Post},
+        Pre call: ${startingCensus.Pre},
+        Short call: ${startingCensus.S}
+      </p>
+
+      <h3>Admission matrix</h3>
+      <table class="admissions-table">
+        <thead>
+          <tr>
+            <th>Admit #</th>
+            <th>Assigned Team</th>
+            <th>L</th>
+            <th>M</th>
+            <th>Post</th>
+            <th>Pre</th>
+            <th>S</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${admissionsRows}
+        </tbody>
+      </table>
+
+      <h3>Final census</h3>
+      <p>
+        Long call: ${finalCensus.L},
+        Medium call: ${finalCensus.M},
+        Post call: ${finalCensus.Post},
+        Pre call: ${finalCensus.Pre},
+        Short call: ${finalCensus.S}
       </p>
     </div>
   `;
 }
 
-// Cascade screen (single node)
-
-function renderCascadeScreen(tree, node) {
-  if (!tree || !node) {
-    return `
-      <div class="cascade-shell">
-        <p>Unable to load this cascade. Please return to the home screen.</p>
-        <button class="btn-secondary" data-action="go-home">Back to home</button>
-      </div>
+function renderFlags(container, flags) {
+  if (!flags || flags.length === 0) {
+    container.innerHTML = `
+      <p class="results-placeholder">
+        No capacity flags in this simulation. Always correlate with real-time clinical context and local policies.
+      </p>
     `;
+    return;
   }
 
-  const isOutcome = node.type === "outcome";
-
-  const optionsHtml =
-    !isOutcome && node.options && node.options.length
-      ? `
-      <div class="cascade-options">
-        ${node.options
-          .map(
-            (opt, index) => `
-          <button
-            class="cascade-option-btn"
-            data-next="${opt.next}"
-          >
-            ${String.fromCharCode(65 + index)}. ${opt.label}
-          </button>
-        `
-          )
-          .join("")}
-      </div>
-      `
-      : "";
-
-  const outcomeHtml = isOutcome
-    ? `
-      <div>
-        ${
-          node.note
-            ? `<p class="outcome-note">${node.note}</p>`
-            : ""
-        }
-      </div>
-    `
-    : "";
-
-  const noteHtml =
-    !isOutcome && node.note
-      ? `<p class="cascade-note">${node.note}</p>`
-      : "";
-
-  const stepInfo = computeStepInfo(tree, node);
-
-  return `
-    <div class="cascade-shell">
-      <div class="cascade-topbar">
-        <div class="cascade-left">
-          <div class="icon-back" data-action="back">
-            <span>←</span>
-          </div>
-          <div>
-            <div class="cascade-label">${tree.title}</div>
-            <div class="cascade-step">${stepInfo}</div>
-          </div>
-        </div>
-
-        <button class="btn-secondary" data-action="go-home">
-          Home
-        </button>
-      </div>
-
-      <div class="cascade-main">
-        <div>
-          <h2 class="cascade-question">${node.text}</h2>
-          ${noteHtml}
-          ${optionsHtml}
-          ${outcomeHtml}
-        </div>
-
-        ${
-          isOutcome
-            ? `
-          <div class="cascade-actions">
-            <button class="btn-primary" data-action="restart">
-              Restart this cascade
-            </button>
-            <button class="btn-secondary" data-action="go-home">
-              Choose a different path
-            </button>
-          </div>
-        `
-            : ""
-        }
-
-      </div>
-    </div>
-  `;
-}
-
-function attachCascadeEvents(tree, node) {
-  const container = document.getElementById("screen-container");
-  if (!container) return;
-
-  const backBtn = container.querySelector('[data-action="back"]');
-  if (backBtn) {
-    backBtn.addEventListener("click", () => {
-      goBack();
-    });
-  }
-
-  const homeBtns = container.querySelectorAll('[data-action="go-home"]');
-  homeBtns.forEach((btn) =>
-    btn.addEventListener("click", () => {
-      goHome();
+  container.innerHTML = flags
+    .map((flag) => {
+      const cls =
+        flag.level === "danger"
+          ? "flag-pill flag-pill--danger"
+          : "flag-pill flag-pill--warning";
+      return `<div class="${cls}">${flag.message}</div>`;
     })
-  );
-
-  const restartBtn = container.querySelector('[data-action="restart"]');
-  if (restartBtn) {
-    restartBtn.addEventListener("click", () => {
-      restartCascade();
-    });
-  }
-
-  const optionButtons = container.querySelectorAll(".cascade-option-btn");
-  optionButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const nextId = btn.getAttribute("data-next");
-      if (nextId) {
-        goToNode(nextId);
-      }
-    });
-  });
-}
-
-// ---------- Navigation Helpers ----------
-
-function startCascade(treeKey) {
-  const tree = decisionTrees[treeKey];
-  if (!tree) return;
-
-  appState = {
-    view: "cascade",
-    activeTreeKey: treeKey,
-    currentNodeId: tree.rootId,
-    history: []
-  };
-
-  renderCurrentScreen();
-}
-
-function restartCascade() {
-  const tree = decisionTrees[appState.activeTreeKey];
-  if (!tree) {
-    goHome();
-    return;
-  }
-
-  appState.currentNodeId = tree.rootId;
-  appState.history = [];
-  renderCurrentScreen();
-}
-
-function goToNode(nodeId) {
-  if (!nodeId) return;
-  appState.history.push(appState.currentNodeId);
-  appState.currentNodeId = nodeId;
-  renderCurrentScreen();
-}
-
-function goBack() {
-  if (appState.history.length === 0) {
-    goHome();
-    return;
-  }
-  appState.currentNodeId = appState.history.pop();
-  renderCurrentScreen();
-}
-
-function goHome() {
-  appState = {
-    view: "home",
-    activeTreeKey: null,
-    currentNodeId: null,
-    history: []
-  };
-  renderCurrentScreen();
-}
-
-function computeStepInfo(tree, node) {
-  if (!tree || !node) return "";
-  const isOutcome = node.type === "outcome";
-  return isOutcome
-    ? "Final node – review and correlate clinically."
-    : "Decision node – choose the branch that best fits the scenario.";
+    .join("");
 }
