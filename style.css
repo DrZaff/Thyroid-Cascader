@@ -616,3 +616,22 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+/* Center header content */
+.app-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.app-header h1,
+.app-header p {
+  text-align: center;
+}
+
+/* Center the footer text */
+.app-footer {
+  text-align: center;
+  margin-top: 2rem;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
