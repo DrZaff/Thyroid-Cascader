@@ -600,17 +600,19 @@ body {
   color: var(--color-text-primary);
 }
 
-@media (max-width: 600px) {
-  /* ... you already have other rules here ... */
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
 
-  /* Prevent iOS Safari from zooming/offsetting on focus */
-  .field-input,
-  .field-input--compact {
-    font-size: 16px;         /* >=16px stops the zoom */
-  }
-
-  input[type="number"].field-input--compact {
-    -webkit-text-size-adjust: 100%;
-  }
+ .app-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: radial-gradient(circle, rgba(22, 242, 154, 0.12), transparent 60%);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-card);
 }
 
