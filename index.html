@@ -21,7 +21,9 @@
   <div class="app-shell">
     <header class="app-header">
       <h1 class="app-title">Thyroid Cascader</h1>
-      <p class="app-subtitle"> Decision trees for patients with suspected thyroid abnormality. </p>
+      <p class="app-subtitle">
+        Decision trees for patients with suspected thyroid abnormality.
+      </p>
 
       <div class="app-meta">
         <span class="app-badge">ClinicalToolsDEV</span>
@@ -45,15 +47,32 @@
     </footer>
   </div>
 
+  <!-- iOS INSTALL BANNER -->
+  <div id="ios-install-hint" class="ios-install-hint ios-install-hint-hidden">
+    <div class="ios-install-hint-icon">📱</div>
+    <div class="ios-install-hint-text">
+      <strong>Install this app</strong><br />
+      On iPhone: tap the <strong>Share</strong> button, then choose
+      <strong>Add to Home Screen</strong>.
+    </div>
+    <button type="button" class="ios-install-hint-close" aria-label="Dismiss">
+      CLOSE
+    </button>
+  </div>
+
+  <!-- Existing JS -->
   <script src="script.js"></script>
   <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("./service-worker.js")
-        .catch(err => console.error("Service worker registration failed:", err));
-    });
-  }
-</script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("./service-worker.js")
+          .catch(err => console.error("Service worker registration failed:", err));
+      });
+    }
+  </script>
+
+  <!-- iOS Install Hint Script -->
+  <script src="ios-install-hint.js"></script>
 </body>
 </html>
